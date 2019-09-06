@@ -55,4 +55,12 @@ public class CounterMetricFamily extends Collector.MetricFamilySamples {
     samples.add(new Sample(name, labelNames, labelValues, value));
     return this;
   }
+
+  public CounterMetricFamily addMetric(List<String> labelValues, double value, long timestamp) {
+    if (labelValues.size() != labelNames.size()) {
+      throw new IllegalArgumentException("Incorrect number of labels.");
+    }
+    samples.add(new Sample(name, labelNames, labelValues, value, timestamp));
+    return this;
+  }
 }

@@ -1,12 +1,16 @@
 package io.prometheus.client.exporter;
 
-import io.prometheus.client.Counter;
-import io.prometheus.client.Gauge;
-import io.prometheus.client.Histogram;
-import io.prometheus.client.Summary;
+import io.prometheus.client.*;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
 
 public class ExampleExporter {
 
@@ -17,6 +21,9 @@ public class ExampleExporter {
   static final Gauge l = Gauge.build().name("labels").help("blah").labelNames("l").register();
 
   public static void main(String[] args) throws Exception {
+    Collector cc = new YourCustomCollector();
+    cc.register();
+
     Server server = new Server(1235);
     ServletContextHandler context = new ServletContextHandler();
     context.setContextPath("/");
@@ -29,6 +36,32 @@ public class ExampleExporter {
     l.labels("foo").inc(5);
     server.start();
     server.join();
+  }
+
+  public static class YourCustomCollector extends Collector {
+    public List<MetricFamilySamples> collect() {
+      List<MetricFamilySamples> mfs = new ArrayList<MetricFamilySamples>();
+      // With no labels.
+      mfs.add(new CounterMetricFamily("my_counter", "help", 42));
+
+      SimpleDateFormat format =  new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+      String time="2019-09-5 16:39:15";
+      Date date = null;
+      try {
+        date = format.parse(time);
+      } catch (ParseException e) {
+        e.printStackTrace();
+      }
+
+      long ts = date.getTime();
+      // With labels
+      CounterMetricFamily labeledCounter = new CounterMetricFamily("my_other_counter", "help", Arrays.asList("labelname"));
+      labeledCounter.addMetric(Arrays.asList("foo"), 4, ts);
+      labeledCounter.addMetric(Arrays.asList("bar"), 5, ts);
+      labeledCounter.addMetric(Arrays.asList("bar"), 5, ts);
+      mfs.add(labeledCounter);
+      return mfs;
+    }
   }
 
 }
